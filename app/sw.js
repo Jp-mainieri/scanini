@@ -1,5 +1,5 @@
 /* Service Worker — cache da interface para funcionar offline.
-   (As chamadas ao Gemini sempre precisam de internet.) */
+   Chamadas ao Worker (workers.dev) sempre vão pra rede. */
 const CACHE = 'figurinhas-v1';
 const ASSETS = [
   './',
@@ -24,8 +24,8 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // nunca cachear chamadas ao Gemini ou fontes externas — sempre rede
-  if (url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com') || url.hostname.includes('fonts.google')) {
+  // nunca cachear chamadas externas — sempre rede
+  if (url.hostname.includes('workers.dev') || url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com') || url.hostname.includes('fonts.google')) {
     return;
   }
   e.respondWith(

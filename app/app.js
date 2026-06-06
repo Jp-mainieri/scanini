@@ -5,6 +5,7 @@
 
 // ─── CONFIG ──────────────────────────────────────────────────
 const WORKER_URL = 'https://scanini-worker.joaopedro-mainieri.workers.dev';
+const APP_URL = 'scanini.pages.dev';
 
 // ─── DEVICE ID ───────────────────────────────────────────────
 function getDeviceId() {
@@ -477,7 +478,7 @@ function generatePDF() {
   doc.text(`Gerado em ${date}  ·  ${missing.length} faltando de ${TOTAL}  ·  ${Math.round(owned.size/TOTAL*100)}% completo`, margin, 19);
   doc.setTextColor(100, 120, 150);
   doc.setFontSize(7);
-  doc.text('scanini.netlify.app', margin, 25);
+  doc.text(APP_URL, margin, 25);
 
   y = 36;
 
@@ -531,7 +532,7 @@ function generatePDF() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(160, 170, 190);
-    doc.text(`Página ${i} de ${pages}  ·  scanini.netlify.app`, W / 2, 293, { align: 'center' });
+    doc.text(`Página ${i} de ${pages}  ·  ${APP_URL}`, W / 2, 293, { align: 'center' });
   }
 
   doc.save(`figurinhas-faltando-${date.replace(/\//g,'-')}.pdf`);
