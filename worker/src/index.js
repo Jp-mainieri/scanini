@@ -42,6 +42,8 @@ export default {
         response = await handlePutAlbum(request, env);
       } else if (pathname === '/api/test-email' && request.method === 'POST') {
         response = await handleTestEmail(request, env);
+      } else if (pathname === '/api/checkout' && request.method === 'GET') {
+        response = await handleCheckout(request, env);
       } else {
         response = json({ error: 'Not found' }, 404);
       }
@@ -236,6 +238,26 @@ async function handlePutAlbum(request, env) {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+async function handleCheckout(request, env) {
+  const resp = await fetch('https://api.mercadopago.com/checkout/preferences', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.MP_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      items: [{ title: 'Scanini Premium', quantity: 1, unit_price: 9.90, currency_id: 'BRL' }],
+      payment_methods: { installments: 1 },
+      back_urls: { success: 'https://scanini.scaniworker.workers.dev' },
+      auto_return: 'approved',
+      notification_url: 'https://scanini.scaniworker.workers.dev/api/webhook-mp',
+    }),
+  });
+  if (!resp.ok) return json({ error: 'Erro ao criar preferência MP' }, 502);
+  const { init_point } = await resp.json();
+  return Response.redirect(init_point, 302);
+}
 
 async function handleTestEmail(request, env) {
   if (!env.RESEND_API_KEY) return json({ error: 'RESEND_API_KEY não configurada' }, 500);
