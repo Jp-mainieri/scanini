@@ -669,7 +669,7 @@ function generatePDF() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(232, 160, 16);
-    doc.text(`${team.flag}  ${team.name.toUpperCase()}`, margin + 3, y + 5);
+    doc.text(team.name.toUpperCase(), margin + 3, y + 5);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(140, 150, 130);
