@@ -251,6 +251,7 @@ $('manualModal').addEventListener('click', e => { if (e.target.id === 'manualMod
 
 // ─── CAMERA ──────────────────────────────────────────────────
 async function startCamera() {
+  if (!isPremium) { openPremiumModal(); return; }
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 1280 } }
@@ -575,10 +576,14 @@ async function syncPremiumStatus() {
 }
 
 function refreshPremiumUI() {
+  // PDF card
   const lockEl = $('pdfLock');
   const btnEl  = $('pdfBtn');
   if (isPremium) { lockEl.style.display = 'none'; btnEl.classList.add('show'); }
   else           { lockEl.style.display = 'block'; btnEl.classList.remove('show'); }
+  // Camera lock overlay
+  $('camPremiumLock').classList.toggle('hidden', isPremium);
+  $('startBtn').classList.toggle('hidden', !isPremium);
 }
 
 function refreshPremiumSettingsRow() {
