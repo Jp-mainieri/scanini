@@ -1,6 +1,6 @@
 {
-  "name": "Scanner de Figurinhas — Copa 2026",
-  "short_name": "Figurinhas",
+  "name": "Scanini — Copa 2026",
+  "short_name": "Scanini",
   "description": "Escaneie figurinhas da Copa com IA, controle o que falta e exporte pro WhatsApp.",
   "start_url": "./index.html",
   "display": "standalone",
