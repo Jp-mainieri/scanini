@@ -702,6 +702,48 @@ body::before {
 .g-toast svg { width: 14px; height: 14px; flex-shrink: 0; }
 .g-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ─── Buy button + divider (premium modal) ─── */
+.btn-buy {
+  width: 100%;
+  padding: 15px;
+  background: var(--gold2);
+  color: var(--ink);
+  border: none;
+  border-radius: 12px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(232,160,16,.3);
+}
+.btn-buy svg { width: 18px; height: 18px; }
+.btn-buy:active { transform: scale(.97); }
+.modal-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+.modal-divider::before, .modal-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
 /* ─── Sync indicator ─── */
 #syncIndicator {
   margin-left: auto;
@@ -898,7 +940,11 @@ body::before {
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <h2 class="modal-title">Ativar Premium</h2>
-    <p class="modal-sub">Digite o código recebido após a compra para liberar o scanner e a lista em PDF.</p>
+    <p class="modal-sub">Scanner ilimitado + exportação em PDF por um pagamento único.</p>
+    <button class="btn-buy" onclick="window.open(MP_PAYMENT_LINK,'_blank')">
+      <i data-lucide="shopping-cart"></i> Comprar por R$ 9,90
+    </button>
+    <div class="modal-divider"><span>Já comprou? Ative abaixo</span></div>
     <div class="code-input-row">
       <input class="code-inp" id="codeInp" type="text"
         placeholder="Ex: SCAN-7X9K2" maxlength="12"
