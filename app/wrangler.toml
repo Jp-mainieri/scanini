@@ -1,0 +1,14 @@
+name = "scanini"
+pages_build_output_dir = "."
+
+[[kv_namespaces]]
+binding = "SCANINI_KV"
+id = "307e3fc326e745a487de8acd586d17ab"
+
+# Secrets configurados via: Cloudflare Pages → Settings → Environment variables
+# GEMINI_API_KEY
+# MP_ACCESS_TOKEN
+# MP_WEBHOOK_SECRET
+
+[vars]
+CODE_PREFIX = "SCAN"
