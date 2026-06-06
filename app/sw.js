@@ -1,6 +1,6 @@
 /* Service Worker — cache da interface para funcionar offline.
    Chamadas ao Worker (workers.dev) sempre vão pra rede. */
-const CACHE = 'scanini-v2';
+const CACHE = 'scanini-v3';
 const ASSETS = [
   './',
   './index.html',
