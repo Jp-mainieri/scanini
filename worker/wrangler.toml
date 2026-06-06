@@ -1,0 +1,17 @@
+name = "scanini-worker"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+[[kv_namespaces]]
+binding = "SCANINI_KV"
+id = "SUBSTITUA_PELO_ID_REAL"
+preview_id = "SUBSTITUA_PELO_PREVIEW_ID"
+
+# Secrets (configurar via: wrangler secret put NOME)
+# GEMINI_API_KEY
+# MP_ACCESS_TOKEN
+# MP_WEBHOOK_SECRET
+# CODE_PREFIX  (padrão: "SCAN")
+
+[vars]
+CODE_PREFIX = "SCAN"
