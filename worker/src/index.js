@@ -40,6 +40,8 @@ export default {
         response = await handleGetAlbum(request, env);
       } else if (pathname === '/api/album' && request.method === 'PUT') {
         response = await handlePutAlbum(request, env);
+      } else if (pathname === '/api/test-email' && request.method === 'POST') {
+        response = await handleTestEmail(request, env);
       } else {
         response = json({ error: 'Not found' }, 404);
       }
@@ -173,7 +175,7 @@ async function handleWebhookMP(request, env) {
   console.log(`Código gerado: ${code} para pagamento ${paymentId} (${entry.payerEmail})`);
 
   if (entry.payerEmail && env.RESEND_API_KEY) {
-    await sendCodeEmail(entry.payerEmail, code, env.RESEND_API_KEY).catch(err =>
+    await sendCodeEmail(entry.payerEmail, code, env.RESEND_API_KEY, env.RESEND_FROM).catch(err =>
       console.error('Erro ao enviar email:', err.message)
     );
   }
@@ -235,7 +237,16 @@ async function handlePutAlbum(request, env) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function sendCodeEmail(to, code, resendApiKey) {
+async function handleTestEmail(request, env) {
+  if (!env.RESEND_API_KEY) return json({ error: 'RESEND_API_KEY não configurada' }, 500);
+  const body = await request.json().catch(() => null);
+  const to   = body?.to;
+  if (!to) return json({ error: 'Campo obrigatório: to' }, 400);
+  await sendCodeEmail(to, 'SCAN-TESTE', env.RESEND_API_KEY, env.RESEND_FROM);
+  return json({ ok: true, sentTo: to });
+}
+
+async function sendCodeEmail(to, code, resendApiKey, fromOverride) {
   const resp = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -243,7 +254,7 @@ async function sendCodeEmail(to, code, resendApiKey) {
       'Authorization': `Bearer ${resendApiKey}`,
     },
     body: JSON.stringify({
-      from: 'Scanini <noreply@scanini.app>',
+      from: fromOverride || 'Scanini <onboarding@resend.dev>',
       to: [to],
       subject: `Seu código Scanini Premium: ${code}`,
       html: `
