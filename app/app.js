@@ -26,11 +26,15 @@ let scanMode     = 'have';
 let albumFilter  = 'all';
 let toastTimer   = null;
 let resultTimer  = null;
+let syncTimer    = null;
 
 const $          = id => document.getElementById(id);
 const codeSet    = new Set(ALL_CODES);
 
-function save() { localStorage.setItem('fig_owned', JSON.stringify([...owned])); }
+function save() {
+  localStorage.setItem('fig_owned', JSON.stringify([...owned]));
+  scheduleAlbumPush();
+}
 
 // Inline SVGs para células do álbum (evita overhead do lucide em 968 células)
 const SVG_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
@@ -437,6 +441,71 @@ async function callWorker(path, body) {
   return data;
 }
 
+// ─── ALBUM SYNC ──────────────────────────────────────────────
+const SVG_CLOUD = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`;
+const SVG_CLOUD_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><polyline points="9 12 11 14 15 10"/></svg>`;
+
+function getSyncCode() { return localStorage.getItem('fig_code') || null; }
+
+function setSyncIndicator(state) {
+  const el = $('syncIndicator');
+  if (!el) return;
+  el.className = state;
+  if (state === 'syncing') {
+    el.innerHTML = SVG_CLOUD;
+    el.title = 'Sincronizando…';
+  } else if (state === 'done') {
+    el.innerHTML = SVG_CLOUD_CHECK;
+    el.title = 'Sincronizado';
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(() => { el.className = ''; el.innerHTML = ''; }, 2500);
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+// Puxa álbum do KV e faz union com local — sem bloquear UI
+async function pullAlbum(code) {
+  try {
+    const resp = await fetch(`${WORKER_URL}/api/album?code=${encodeURIComponent(code)}`);
+    if (!resp.ok) return;
+    const data   = await resp.json();
+    const remote = data.owned || [];
+    const before = owned.size;
+    remote.forEach(c => { if (codeSet.has(c)) owned.add(c); });
+    if (owned.size !== before) {
+      localStorage.setItem('fig_owned', JSON.stringify([...owned]));
+      updateStats(); renderAlbum(); updateWhatsApp();
+    }
+  } catch {}
+}
+
+// Debounce de 2s: envia álbum local ao KV e aplica union da resposta
+function scheduleAlbumPush() {
+  const code = getSyncCode();
+  if (!code) return;
+  setSyncIndicator('syncing');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(async () => {
+    try {
+      const resp = await fetch(`${WORKER_URL}/api/album`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, owned: [...owned] }),
+      });
+      if (!resp.ok) { setSyncIndicator(''); return; }
+      const data   = await resp.json();
+      const before = owned.size;
+      (data.owned || []).forEach(c => { if (codeSet.has(c)) owned.add(c); });
+      if (owned.size !== before) {
+        localStorage.setItem('fig_owned', JSON.stringify([...owned]));
+        updateStats(); renderAlbum(); updateWhatsApp();
+      }
+      setSyncIndicator('done');
+    } catch { setSyncIndicator(''); }
+  }, 2000);
+}
+
 // ─── SETTINGS ────────────────────────────────────────────────
 function openSettings() {
   refreshPremiumSettingsRow();
@@ -492,9 +561,15 @@ async function syncPremiumStatus() {
     if (!resp.ok) return;
     const data = await resp.json();
     isPremium = !!data.premium;
-    if (isPremium) localStorage.setItem('fig_premium', '1');
-    else localStorage.removeItem('fig_premium');
-    refreshPremiumUI();
+    if (isPremium) {
+      localStorage.setItem('fig_premium', '1');
+      refreshPremiumUI();
+      const code = getSyncCode();
+      if (code) pullAlbum(code); // sync silencioso ao abrir
+    } else {
+      localStorage.removeItem('fig_premium');
+      refreshPremiumUI();
+    }
   } catch {}
 }
 
@@ -543,6 +618,7 @@ async function activateCode() {
     status.className = 'code-status ok';
     status.textContent = '✓ Código ativado! Seja bem-vindo ao Premium.';
     refreshPremiumUI();
+    pullAlbum(raw); // puxa álbum do KV e faz union com local
     setTimeout(() => closePremiumModal(), 1500);
     showToast('Premium ativado!', 'success');
   } catch {

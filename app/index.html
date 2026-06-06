@@ -701,6 +701,21 @@ body::before {
 }
 .g-toast svg { width: 14px; height: 14px; flex-shrink: 0; }
 .g-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── Sync indicator ─── */
+#syncIndicator {
+  margin-left: auto;
+  margin-right: 6px;
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity .4s, color .3s;
+  flex-shrink: 0;
+}
+#syncIndicator.syncing { opacity: 1; color: var(--muted); }
+#syncIndicator.done    { opacity: 1; color: var(--green); }
+.settings-btn { margin-left: 0; }
 </style>
 </head>
 <body>
@@ -712,6 +727,7 @@ body::before {
       <div class="logo"><span class="scan">scan</span><span class="ini">ini</span></div>
       <div class="logo-sub">Copa 2026 · Panini Oficial</div>
     </div>
+    <span id="syncIndicator" aria-label="Status de sincronização"></span>
     <button class="settings-btn" onclick="openSettings()" aria-label="Configurações">
       <i data-lucide="settings"></i>
     </button>

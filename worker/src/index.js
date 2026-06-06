@@ -6,6 +6,8 @@
  *   POST /api/activate    — ativa um código premium no KV
  *   POST /api/webhook-mp  — recebe webhook do Mercado Pago e gera código
  *   GET  /api/status      — retorna se deviceId é premium
+ *   GET  /api/album       — retorna álbum salvo no KV para um código
+ *   PUT  /api/album       — merge union do álbum no KV
  */
 
 export default {
@@ -15,7 +17,7 @@ export default {
 
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
 
@@ -34,6 +36,10 @@ export default {
         response = await handleWebhookMP(request, env);
       } else if (pathname === '/api/status' && request.method === 'GET') {
         response = await handleStatus(request, env);
+      } else if (pathname === '/api/album' && request.method === 'GET') {
+        response = await handleGetAlbum(request, env);
+      } else if (pathname === '/api/album' && request.method === 'PUT') {
+        response = await handlePutAlbum(request, env);
       } else {
         response = json({ error: 'Not found' }, 404);
       }
@@ -181,6 +187,44 @@ async function handleStatus(request, env) {
 
   const premium = await isPremium(deviceId, env);
   return json({ premium });
+}
+
+// ─── GET /api/album ───────────────────────────────────────────────────────────
+
+async function handleGetAlbum(request, env) {
+  const url  = new URL(request.url);
+  const code = url.searchParams.get('code')?.trim().toUpperCase();
+  if (!code) return json({ error: 'code obrigatório' }, 400);
+
+  const codeEntry = await env.SCANINI_KV.get(`code:${code}`);
+  if (!codeEntry) return json({ error: 'Código inválido' }, 404);
+
+  const raw   = await env.SCANINI_KV.get(`album:${code}`);
+  const owned = raw ? JSON.parse(raw) : [];
+  return json({ owned });
+}
+
+// ─── PUT /api/album ───────────────────────────────────────────────────────────
+
+async function handlePutAlbum(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body?.code || !Array.isArray(body?.owned)) {
+    return json({ error: 'Campos obrigatórios: code, owned[]' }, 400);
+  }
+
+  const code = body.code.trim().toUpperCase();
+
+  const codeEntry = await env.SCANINI_KV.get(`code:${code}`);
+  if (!codeEntry) return json({ error: 'Código inválido' }, 404);
+
+  const raw     = await env.SCANINI_KV.get(`album:${code}`);
+  const current = raw ? JSON.parse(raw) : [];
+
+  // União — nunca subtrai
+  const merged = [...new Set([...current, ...body.owned])];
+
+  await env.SCANINI_KV.put(`album:${code}`, JSON.stringify(merged));
+  return json({ owned: merged });
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

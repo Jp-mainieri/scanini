@@ -4,8 +4,8 @@ compatibility_date = "2024-11-01"
 
 [[kv_namespaces]]
 binding = "SCANINI_KV"
-id = "SUBSTITUA_PELO_ID_REAL"
-preview_id = "SUBSTITUA_PELO_PREVIEW_ID"
+id = "307e3fc326e745a487de8acd586d17ab"
+preview_id = "5996ea420a4e4c669e1d6d49e611edf6"
 
 # Secrets (configurar via: wrangler secret put NOME)
 # GEMINI_API_KEY
