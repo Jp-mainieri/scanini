@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "scanini",
+  "main": "worker/src/index.js",
+  "compatibility_date": "2026-06-06",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "app"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SCANINI_KV",
+      "id": "307e3fc326e745a487de8acd586d17ab"
+    }
+  ]
+}

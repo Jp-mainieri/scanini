@@ -3,7 +3,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 // ─── CONFIG ──────────────────────────────────────────────────
-const WORKER_URL     = ''; // Pages Function no mesmo domínio — URL relativa
+const WORKER_URL     = 'https://scanini.scaniworker.workers.dev';
 const APP_URL        = 'scanini.pages.dev';
 const MP_PAYMENT_LINK = 'https://mpago.la/2PzMmCY';
 

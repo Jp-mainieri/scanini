@@ -172,6 +172,12 @@ async function handleWebhookMP(request, env) {
 
   console.log(`Código gerado: ${code} para pagamento ${paymentId} (${entry.payerEmail})`);
 
+  if (entry.payerEmail && env.RESEND_API_KEY) {
+    await sendCodeEmail(entry.payerEmail, code, env.RESEND_API_KEY).catch(err =>
+      console.error('Erro ao enviar email:', err.message)
+    );
+  }
+
   return json({ ok: true, code });
 }
 
@@ -228,6 +234,42 @@ async function handlePutAlbum(request, env) {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+async function sendCodeEmail(to, code, resendApiKey) {
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${resendApiKey}`,
+    },
+    body: JSON.stringify({
+      from: 'Scanini <noreply@scanini.app>',
+      to: [to],
+      subject: `Seu código Scanini Premium: ${code}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#faf7f0;border-radius:12px">
+          <h1 style="font-size:28px;color:#0f1a10;margin:0 0 4px">scan<span style="color:#1d6b38">ini</span></h1>
+          <p style="color:#7a7060;font-size:13px;margin:0 0 28px">Copa do Mundo 2026 · Panini</p>
+          <p style="color:#0f1a10;font-size:16px;margin:0 0 20px">Seu pagamento foi confirmado! Use o código abaixo para ativar o Premium no app:</p>
+          <div style="background:#0f1a10;border-radius:10px;padding:20px;text-align:center;margin:0 0 24px">
+            <span style="font-family:monospace;font-size:28px;font-weight:900;letter-spacing:6px;color:#e8a010">${code}</span>
+          </div>
+          <p style="color:#7a7060;font-size:13px;margin:0 0 8px">Como ativar:</p>
+          <ol style="color:#0f1a10;font-size:14px;line-height:1.8;margin:0 0 24px;padding-left:20px">
+            <li>Abra o app Scanini</li>
+            <li>Toque em <strong>Lista → Ativar com código</strong> (ou <strong>⚙️ → Ativar código</strong>)</li>
+            <li>Digite o código acima e toque em <strong>Ativar</strong></li>
+          </ol>
+          <p style="color:#7a7060;font-size:12px;margin:0">Dúvidas? Responda este email.</p>
+        </div>
+      `,
+    }),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.message || `Resend ${resp.status}`);
+  }
+}
 
 async function isPremium(deviceId, env) {
   const code = await env.SCANINI_KV.get(`device:${deviceId}`);
