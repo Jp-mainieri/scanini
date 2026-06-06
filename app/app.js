@@ -4,7 +4,7 @@
 
 // ─── CONFIG ──────────────────────────────────────────────────
 const WORKER_URL     = 'https://scanini.scaniworker.workers.dev';
-const APP_URL        = 'completei.app';
+const APP_URL        = 'completei.pages.dev';
 const MP_CHECKOUT_URL = `${WORKER_URL}/api/checkout`;
 
 // ─── DEVICE ID ───────────────────────────────────────────────
