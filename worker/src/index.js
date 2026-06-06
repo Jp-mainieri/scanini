@@ -254,9 +254,17 @@ async function handleCheckout(request, env) {
       notification_url: 'https://scanini.scaniworker.workers.dev/api/webhook-mp',
     }),
   });
-  if (!resp.ok) return json({ error: 'Erro ao criar preferência MP' }, 502);
-  const { init_point } = await resp.json();
-  return Response.redirect(init_point, 302);
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    console.error('MP checkout error:', resp.status, JSON.stringify(err));
+    return json({ error: 'Erro ao criar preferência MP', detail: err }, 502);
+  }
+  const data = await resp.json();
+  if (!data.init_point) {
+    console.error('MP response sem init_point:', JSON.stringify(data));
+    return json({ error: 'MP não retornou link de pagamento' }, 502);
+  }
+  return Response.redirect(data.init_point, 302);
 }
 
 async function handleTestEmail(request, env) {

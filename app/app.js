@@ -5,7 +5,7 @@
 // ─── CONFIG ──────────────────────────────────────────────────
 const WORKER_URL     = 'https://scanini.scaniworker.workers.dev';
 const APP_URL        = 'scanini.pages.dev';
-const MP_CHECKOUT_URL = `${WORKER_URL}/api/checkout`;
+const MP_CHECKOUT_URL = 'https://mpago.la/2PzMmCY';
 
 // ─── DEVICE ID ───────────────────────────────────────────────
 function getDeviceId() {
