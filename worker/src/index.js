@@ -247,7 +247,7 @@ async function handleCheckout(request, env) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      items: [{ title: 'Scanini Premium', quantity: 1, unit_price: 9.90, currency_id: 'BRL' }],
+      items: [{ title: 'Completei Premium', quantity: 1, unit_price: 9.90, currency_id: 'BRL' }],
       payment_methods: { installments: 1 },
       back_urls: { success: 'https://scanini.scaniworker.workers.dev' },
       auto_return: 'approved',
@@ -276,12 +276,12 @@ async function sendCodeEmail(to, code, resendApiKey, fromOverride) {
       'Authorization': `Bearer ${resendApiKey}`,
     },
     body: JSON.stringify({
-      from: fromOverride || 'Scanini <onboarding@resend.dev>',
+      from: fromOverride || 'Completei <onboarding@resend.dev>',
       to: [to],
-      subject: `Seu código Scanini Premium: ${code}`,
+      subject: `Seu código Completei Premium: ${code}`,
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#faf7f0;border-radius:12px">
-          <h1 style="font-size:28px;color:#0f1a10;margin:0 0 4px">scan<span style="color:#1d6b38">ini</span></h1>
+          <h1 style="font-size:28px;color:#0f1a10;margin:0 0 4px">comple<span style="color:#1d6b38">tei</span></h1>
           <p style="color:#7a7060;font-size:13px;margin:0 0 28px">Copa do Mundo 2026 · Panini</p>
           <p style="color:#0f1a10;font-size:16px;margin:0 0 20px">Seu pagamento foi confirmado! Use o código abaixo para ativar o Premium no app:</p>
           <div style="background:#0f1a10;border-radius:10px;padding:20px;text-align:center;margin:0 0 24px">
@@ -289,7 +289,7 @@ async function sendCodeEmail(to, code, resendApiKey, fromOverride) {
           </div>
           <p style="color:#7a7060;font-size:13px;margin:0 0 8px">Como ativar:</p>
           <ol style="color:#0f1a10;font-size:14px;line-height:1.8;margin:0 0 24px;padding-left:20px">
-            <li>Abra o app Scanini</li>
+            <li>Abra o app Completei</li>
             <li>Toque em <strong>Lista → Ativar com código</strong> (ou <strong>⚙️ → Ativar código</strong>)</li>
             <li>Digite o código acima e toque em <strong>Ativar</strong></li>
           </ol>

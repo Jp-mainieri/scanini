@@ -1,6 +1,6 @@
 {
-  "name": "Scanini — Copa 2026",
-  "short_name": "Scanini",
+  "name": "Completei — Copa 2026",
+  "short_name": "Completei",
   "description": "Escaneie figurinhas da Copa com IA, controle o que falta e exporte pro WhatsApp.",
   "start_url": "./index.html",
   "display": "standalone",

@@ -1,10 +1,10 @@
 /* ══════════════════════════════════════════════════════════════
-   Scanini — Copa 2026
+   Completei — Copa 2026
    ══════════════════════════════════════════════════════════════ */
 
 // ─── CONFIG ──────────────────────────────────────────────────
 const WORKER_URL     = 'https://scanini.scaniworker.workers.dev';
-const APP_URL        = 'scanini.pages.dev';
+const APP_URL        = 'completei.app';
 const MP_CHECKOUT_URL = `${WORKER_URL}/api/checkout`;
 
 // ─── DEVICE ID ───────────────────────────────────────────────
@@ -196,7 +196,7 @@ function buildMessage() {
     if (m.length === 0) continue;
     msg += `${t.flag} *${t.name}:* ${m.join(', ')}\n`;
   }
-  msg += `\n_Feito com o Scanini_`;
+  msg += `\n_Feito com o Completei_`;
   return msg;
 }
 
