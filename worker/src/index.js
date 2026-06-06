@@ -99,11 +99,6 @@ async function handleActivate(request, env) {
 
   const entry = JSON.parse(raw);
 
-  // Código já ativado num aparelho diferente — permitir re-ativação no mesmo
-  if (entry.activated && entry.deviceId && entry.deviceId !== deviceId) {
-    return json({ error: 'Código já ativado em outro aparelho' }, 409);
-  }
-
   entry.activated = true;
   entry.deviceId = deviceId;
   entry.activatedAt = new Date().toISOString();

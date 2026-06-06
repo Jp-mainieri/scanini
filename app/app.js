@@ -441,10 +441,7 @@ async function activateCode() {
     showToast('🏆 Premium ativado!');
   } catch (e) {
     status.className = 'code-status err';
-    const msg = e.message === 'Código já ativado em outro aparelho'
-      ? '❌ Código já usado em outro aparelho.'
-      : '❌ Código inválido. Verifique e tente de novo.';
-    status.textContent = msg;
+    status.textContent = '❌ Código inválido. Verifique e tente de novo.';
   }
 }
 
