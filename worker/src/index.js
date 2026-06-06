@@ -71,11 +71,17 @@ async function handleScan(request, env) {
   const prompt = mode === 'single' ? PROMPT_SINGLE : PROMPT_PAGE;
   const maxTokens = mode === 'single' ? 800 : 2000;
 
-  const text = await callGemini(prompt, image, maxTokens, env.GEMINI_API_KEY);
-  const parsed = extractJSON(text);
+  let text;
+  try {
+    text = await callGemini(prompt, image, maxTokens, env.GEMINI_API_KEY);
+  } catch (err) {
+    console.error('Gemini error:', err.message);
+    return json({ error: err.message || 'Erro ao chamar a IA' }, 502);
+  }
 
+  const parsed = extractJSON(text);
   if (!parsed) {
-    return json({ error: 'IA retornou resposta inválida', raw: text.slice(0, 200) }, 502);
+    return json({ error: 'IA retornou resposta inválida' }, 502);
   }
 
   return json(parsed);
