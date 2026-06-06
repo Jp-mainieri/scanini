@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0f1e" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Figurinhas" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>Scanner de Figurinhas — Copa 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #F5C518;
+    --gold-dark: #c9a000;
+    --green: #006437;
+    --green-light: #00a050;
+    --blue: #003082;
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --surface3: #232d44;
+    --border: #1e2d4a;
+    --text: #f0f4ff;
+    --muted: #7a8aaa;
+    --red: #e84444;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body { overscroll-behavior: none; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 90% 50% at 50% -10%, rgba(0,100,55,0.20) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 40% at 85% 105%, rgba(0,48,130,0.18) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; padding: 16px 14px 90px; }
+
+  /* ─── Header ─── */
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .trophy { font-size: 2.2rem; line-height: 1; }
+  .h-text h1 {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; letter-spacing: 1.5px; line-height: 1;
+    background: linear-gradient(135deg, var(--gold), #fff9e0 50%, var(--gold-dark));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .h-text p { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+  .settings-btn {
+    margin-left: auto; background: var(--surface); border: 1px solid var(--border);
+    color: var(--muted); width: 40px; height: 40px; border-radius: 11px; font-size: 1.1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; transition: .15s;
+  }
+  .settings-btn:active { background: var(--surface2); }
+
+  /* ─── Stats ─── */
+  .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 12px 8px; text-align: center; }
+  .stat .num { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; line-height: 1; }
+  .stat.total .num { color: var(--text); }
+  .stat.have .num { color: var(--green-light); }
+  .stat.missing .num { color: var(--gold); }
+  .stat .lbl { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-top: 3px; }
+
+  /* ─── Progress ─── */
+  .prog-wrap { margin-bottom: 20px; }
+  .prog-info { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 5px; }
+  .prog-bar { height: 7px; background: var(--surface); border-radius: 99px; overflow: hidden; border: 1px solid var(--border); }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--gold)); border-radius: 99px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+
+  /* ─── Tabs ─── */
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; background: var(--surface); padding: 5px; border-radius: 13px; border: 1px solid var(--border); }
+  .tab { flex: 1; padding: 9px; border: none; background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 0.82rem; border-radius: 9px; cursor: pointer; transition: .18s; }
+  .tab.active { background: var(--gold); color: #0a0f1e; }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px);} to {opacity:1;transform:none;} }
+
+  /* ─── Scanner ─── */
+  .mode-switch { display: flex; gap: 6px; background: var(--surface); padding: 5px; border-radius: 13px; border: 1px solid var(--border); margin-bottom: 8px; }
+  .mode-btn { flex: 1; padding: 10px; border: none; background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.85rem; border-radius: 9px; cursor: pointer; transition: .18s; }
+  .mode-btn.active#modeHave { background: var(--green); color: #fff; }
+  .mode-btn.active#modeMissing { background: var(--gold); color: #0a0f1e; }
+  .mode-btn.active#modePage { background: var(--blue); color: #fff; }
+  .mode-hint { font-size: 0.78rem; color: var(--muted); text-align: center; margin-bottom: 12px; line-height: 1.4; }
+  .mode-hint b { color: var(--text); }
+  .cam-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .cam-area { position: relative; aspect-ratio: 3/4; max-height: 56vh; background: #000; overflow: hidden; }
+  #video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #canvas { display: none; }
+  .cam-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(10,15,30,.9); padding: 20px; text-align: center; }
+  .cam-overlay.hidden { display: none; }
+  .cam-overlay .big { font-size: 2.6rem; }
+  .cam-overlay p { color: var(--muted); font-size: 0.85rem; max-width: 280px; line-height: 1.4; }
+  .scan-frame { position: absolute; inset: 7%; border: 2px solid var(--gold); border-radius: 10px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(0,0,0,.25); }
+  .scan-frame.hidden { display: none; }
+  .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); animation: scan 2.2s linear infinite; }
+  @keyframes scan { 0%{top:0;opacity:1;} 100%{top:100%;opacity:.2;} }
+  .cam-hint { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; color: #fff; font-size: 0.78rem; text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; }
+
+  .cam-controls { padding: 12px; display: flex; gap: 8px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 13px 16px; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none; transition: .15s; flex: 1; }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-gold { background: var(--gold); color: #0a0f1e; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-wa { background: #25D366; color: #fff; }
+  .btn-sm { flex: none; padding: 9px 13px; font-size: 0.8rem; }
+
+  .result { margin: 0 12px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; font-size: 0.88rem; line-height: 1.45; min-height: 50px; color: var(--muted); display: flex; align-items: center; gap: 9px; }
+  .result.success { border-color: var(--green-light); color: var(--green-light); background: rgba(0,160,80,.08); }
+  .result.dup { border-color: var(--gold); color: var(--gold); background: rgba(245,197,24,.08); }
+  .result.error { border-color: var(--red); color: var(--red); background: rgba(232,68,68,.08); }
+  .result.loading { color: var(--text); }
+  .spinner { width: 17px; height: 17px; border: 2px solid rgba(255,255,255,.15); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg);} }
+
+  /* confidence pill */
+  .conf { display: inline-block; font-size: 0.68rem; padding: 1px 7px; border-radius: 99px; margin-left: 6px; font-weight: 700; }
+  .conf.high { background: rgba(0,160,80,.2); color: var(--green-light); }
+  .conf.medium { background: rgba(245,197,24,.2); color: var(--gold); }
+  .conf.low { background: rgba(232,68,68,.2); color: var(--red); }
+
+  /* manual */
+  .manual { padding: 12px; border-top: 1px solid var(--border); }
+  .manual .label { font-size: 0.72rem; color: var(--muted); margin-bottom: 7px; text-transform: uppercase; letter-spacing: .8px; }
+  .row { display: flex; gap: 8px; }
+  .inp { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 11px; padding: 12px 14px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; transition: border-color .15s; }
+  .inp:focus { border-color: var(--gold); }
+  .inp::placeholder { color: var(--muted); }
+
+  /* ─── Album / Missing ─── */
+  .album-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+  .team-select { flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 11px; padding: 11px 12px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; outline: none; }
+  .filter-toggle { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: 11px; padding: 0 14px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .filter-toggle.active { background: var(--gold); color: #0a0f1e; border-color: var(--gold); }
+
+  .team-block { margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .team-head { display: flex; align-items: center; gap: 8px; padding: 11px 13px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .team-head .flag { font-size: 1.1rem; }
+  .team-head .name { font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem; letter-spacing: 1px; color: var(--gold); flex: 1; }
+  .team-head .cnt { font-size: 0.72rem; color: var(--muted); }
+  .team-head .chev { color: var(--muted); transition: transform .2s; }
+  .team-block.collapsed .chev { transform: rotate(-90deg); }
+  .team-block.collapsed .grid { display: none; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; padding: 11px; }
+  .cell { aspect-ratio: 1; border-radius: 9px; border: 1px solid var(--border); background: var(--surface2); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.72rem; cursor: pointer; transition: .12s; user-select: none; color: var(--muted); gap: 1px; padding: 2px; }
+  .cell .code { font-family: 'Bebas Neue', sans-serif; letter-spacing: .5px; font-size: 0.82rem; }
+  .cell:active { transform: scale(.92); }
+  .cell.owned { background: linear-gradient(135deg, rgba(0,160,80,.25), rgba(0,100,55,.15)); border-color: var(--green-light); color: var(--green-light); }
+  .cell.owned::after { content: '✓'; position: absolute; }
+  .cell.owned .code { color: var(--green-light); }
+  .cell.special { border-style: dashed; }
+
+  /* ─── PDF card ─── */
+  .pdf-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-top: 12px; }
+  .pdf-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; gap: 10px; }
+  .pdf-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 3px; }
+  .pdf-sub { font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
+  .premium-badge { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: #0a0f1e; font-size: 0.62rem; font-weight: 800; letter-spacing: 1px; padding: 3px 8px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+  .btn-pdf { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: #0a0f1e; width: 100%; font-size: 0.9rem; display: none; }
+  .btn-pdf.show { display: flex; }
+  .pdf-lock { font-size: 0.82rem; color: var(--muted); text-align: center; padding: 8px 0 2px; }
+  .link-like { color: var(--gold); cursor: pointer; text-decoration: underline; }
+
+  /* ─── Modal Premium ─── */
+  .modal-premium { background: var(--surface); border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; width: 100%; max-width: 700px; margin: 0 auto; padding: 22px 18px calc(22px + var(--safe-bottom)); animation: slideUp .25s ease; }
+  .code-input-row { display: flex; gap: 8px; margin: 14px 0; }
+  .code-inp { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 11px; padding: 13px 14px; font-family: 'DM Sans', sans-serif; font-size: 1rem; outline: none; text-transform: uppercase; letter-spacing: 2px; }
+  .code-inp:focus { border-color: var(--gold); }
+  .code-inp::placeholder { color: var(--muted); letter-spacing: 0; text-transform: none; }
+  .code-status { font-size: 0.82rem; min-height: 20px; margin-bottom: 4px; }
+  .code-status.ok { color: var(--green-light); }
+  .code-status.err { color: var(--red); }
+
+  /* ─── WhatsApp ─── */
+  .wa-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; }
+  .wa-prev { background: #0b1e11; border: 1px solid #1a3820; border-radius: 12px; padding: 13px; font-size: 0.8rem; line-height: 1.65; color: #a8d5b5; font-family: 'Courier New', monospace; max-height: 320px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; margin-bottom: 13px; }
+  .wa-actions { display: flex; gap: 9px; }
+
+  /* ─── Empty / misc ─── */
+  .empty { color: var(--muted); font-size: 0.85rem; text-align: center; padding: 40px 20px; }
+
+  /* ─── Modal (settings) ─── */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(3px); z-index: 200; display: none; align-items: flex-end; }
+  .modal-bg.show { display: flex; }
+  .modal { background: var(--surface); border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; width: 100%; max-width: 700px; margin: 0 auto; padding: 22px 18px calc(22px + var(--safe-bottom)); animation: slideUp .25s ease; }
+  @keyframes slideUp { from { transform: translateY(100%);} to { transform: none;} }
+  .modal h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 1px; margin-bottom: 4px; }
+  .modal .sub { color: var(--muted); font-size: 0.82rem; margin-bottom: 18px; line-height: 1.5; }
+  .modal label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .8px; }
+  .key-status { font-size: 0.78rem; margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+  .key-status.ok { color: var(--green-light); }
+  .key-status.no { color: var(--muted); }
+  .modal .link { color: var(--gold); text-decoration: none; }
+  .modal-footer { display: flex; gap: 9px; margin-top: 20px; }
+  .danger-zone { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .btn-danger { background: transparent; color: var(--red); border: 1px solid rgba(232,68,68,.3); }
+
+  /* ─── Toast ─── */
+  .toast { position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface3); border: 1px solid var(--border); color: var(--text); padding: 11px 20px; border-radius: 99px; font-size: 0.85rem; opacity: 0; transition: .3s; pointer-events: none; z-index: 300; box-shadow: 0 8px 24px rgba(0,0,0,.4); white-space: nowrap; max-width: 90vw; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* install hint */
+  .install-banner { background: linear-gradient(135deg, var(--green), var(--green-light)); border-radius: 13px; padding: 12px 14px; margin-bottom: 16px; display: none; align-items: center; gap: 10px; font-size: 0.84rem; }
+  .install-banner.show { display: flex; }
+  .install-banner button { margin-left: auto; background: rgba(255,255,255,.2); border: none; color: #fff; padding: 7px 14px; border-radius: 9px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="trophy">🏆</div>
+    <div class="h-text">
+      <h1>Scanner de Figurinhas</h1>
+      <p>Copa do Mundo 2026 · Panini</p>
+    </div>
+    <button class="settings-btn" onclick="openSettings()" aria-label="Configurações">⚙️</button>
+  </header>
+
+  <div class="install-banner" id="installBanner">
+    <span>📲 Instale o app na tela inicial!</span>
+    <button onclick="doInstall()">Instalar</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat total"><div class="num" id="sTotal">0</div><div class="lbl">Total</div></div>
+    <div class="stat have"><div class="num" id="sHave">0</div><div class="lbl">Você tem</div></div>
+    <div class="stat missing"><div class="num" id="sMissing">0</div><div class="lbl">Faltando</div></div>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-info"><span>Progresso do álbum</span><span id="sPct">0%</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-panel="scan" onclick="switchTab('scan')">📷 Scanner</button>
+    <button class="tab" data-panel="album" onclick="switchTab('album')">📖 Álbum</button>
+    <button class="tab" data-panel="wa" onclick="switchTab('wa')">💬 Lista</button>
+  </div>
+
+  <!-- SCANNER PANEL -->
+  <div class="panel active" id="panel-scan">
+    <div class="mode-switch">
+      <button class="mode-btn active" id="modeHave" onclick="setMode('have')">✅ Tenho</button>
+      <button class="mode-btn" id="modeMissing" onclick="setMode('missing')">🔍 Falta</button>
+      <button class="mode-btn" id="modePage" onclick="setMode('page')">📄 Página</button>
+    </div>
+    <div class="mode-hint" id="modeHint">Escaneie as figurinhas que você <b>tem</b> na mão.</div>
+    <div class="cam-card">
+      <div class="cam-area">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+        <div class="scan-frame hidden" id="scanFrame"><div class="scan-line"></div></div>
+        <div class="cam-hint hidden" id="camHint">Enquadre a figurinha e toque em Capturar</div>
+        <div class="cam-overlay" id="camOverlay">
+          <span class="big">📸</span>
+          <p id="camOverlayText">Toque em "Iniciar câmera" para escanear suas figurinhas com IA</p>
+        </div>
+      </div>
+      <div class="cam-controls">
+        <button class="btn btn-gold" id="startBtn" onclick="startCamera()">▶ Iniciar câmera</button>
+        <button class="btn btn-green hidden" id="captureBtn" onclick="capture()" disabled>📷 Capturar</button>
+        <button class="btn btn-outline btn-sm hidden" id="stopBtn" onclick="stopCamera()">✕</button>
+      </div>
+      <div class="result" id="result"><span>Aguardando…</span></div>
+      <div class="manual">
+        <div class="label">✏️ Adicionar manualmente</div>
+        <div class="row">
+          <input class="inp" id="manualInp" type="text" inputmode="text" autocapitalize="characters" placeholder="Ex: PAN3, BRA15…" maxlength="12" onkeydown="if(event.key==='Enter')addManual()" />
+          <button class="btn btn-green btn-sm" onclick="addManual()">+ Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALBUM PANEL -->
+  <div class="panel" id="panel-album">
+    <div class="album-controls">
+      <select class="team-select" id="teamSelect" onchange="renderAlbum()">
+        <option value="all">Todas as seleções</option>
+      </select>
+      <button class="filter-toggle" id="missingToggle" onclick="toggleMissingOnly()">Só faltando</button>
+    </div>
+    <div id="albumContainer"></div>
+  </div>
+
+  <!-- WHATSAPP PANEL -->
+  <div class="panel" id="panel-wa">
+    <div class="wa-card">
+      <div class="wa-prev" id="waPrev">Adicione figurinhas para gerar a lista…</div>
+      <div class="wa-actions">
+        <button class="btn btn-wa" onclick="openWhatsApp()">📲 WhatsApp</button>
+        <button class="btn btn-outline btn-sm" onclick="copyMsg()">📋 Copiar</button>
+      </div>
+    </div>
+    <div class="pdf-card" id="pdfCard">
+      <div class="pdf-head">
+        <div>
+          <div class="pdf-title">🖨️ Lista para impressão</div>
+          <div class="pdf-sub">Leva na banca de troca — só o que falta, por seleção</div>
+        </div>
+        <span class="premium-badge">PREMIUM</span>
+      </div>
+      <button class="btn btn-pdf" id="pdfBtn" onclick="generatePDF()">⬇️ Baixar PDF</button>
+      <div class="pdf-lock" id="pdfLock">
+        🔒 Disponível para assinantes. <span class="link-like" onclick="openPremiumModal()">Ativar com código</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PREMIUM MODAL -->
+<div class="modal-bg" id="premiumModal">
+  <div class="modal-premium">
+    <h2>🏆 Ativar Premium</h2>
+    <p class="sub">Digite o código que você recebeu após a compra para liberar o scanner e a exportação em PDF.</p>
+    <div class="code-input-row">
+      <input class="code-inp" id="codeInp" type="text" placeholder="Ex: SCAN-7X9K2" maxlength="12" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')activateCode()" />
+      <button class="btn btn-gold btn-sm" onclick="activateCode()" style="flex:none;padding:13px 18px;">Ativar</button>
+    </div>
+    <div class="code-status" id="codeStatus"></div>
+    <button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="closePremiumModal()">Fechar</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <h2>Configurações</h2>
+    <p class="sub">Cole sua chave da API do Google Gemini. Ela fica salva só no seu aparelho e nunca é enviada pra outro lugar além do Google.</p>
+    <label>Chave da API Gemini</label>
+    <input class="inp" id="apiKeyInp" type="password" placeholder="AIza…" style="width:100%" />
+    <div class="key-status no" id="keyStatus">🔑 Nenhuma chave salva — o scanner não vai funcionar sem ela.</div>
+    <p class="sub" style="margin-top:14px;margin-bottom:0;">
+      Não tem chave? Pegue grátis em
+      <a class="link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>
+      (sem cartão).
+    </p>
+    <div class="danger-zone">
+      <label>Zona de perigo</label>
+      <button class="btn btn-danger" style="width:100%" onclick="resetAll()">🗑 Apagar todas as figurinhas marcadas</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeSettings()">Cancelar</button>
+      <button class="btn btn-gold" onclick="saveKey()">Salvar chave</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="album-data.js"></script>
+<script src="app.js"></script>
+<script>
+  // Service worker para PWA (funciona offline para a interface)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
