@@ -3,9 +3,22 @@
    Lógica principal: câmera, Gemini Vision, álbum, export WhatsApp
    ══════════════════════════════════════════════════════════════ */
 
+// ─── CONFIG ──────────────────────────────────────────────────
+const WORKER_URL = 'https://scanini-worker.joaopedro-mainieri.workers.dev';
+
+// ─── DEVICE ID ───────────────────────────────────────────────
+function getDeviceId() {
+  let id = localStorage.getItem('fig_device_id');
+  if (!id) {
+    id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+    localStorage.setItem('fig_device_id', id);
+  }
+  return id;
+}
+const deviceId = getDeviceId();
+
 // ─── STATE ───────────────────────────────────────────────────
 let owned = new Set(JSON.parse(localStorage.getItem('fig_owned') || '[]'));
-let apiKey = localStorage.getItem('fig_gemini_key') || '';
 let stream = null;
 let missingOnly = false;
 let deferredPrompt = null;
@@ -30,7 +43,7 @@ function init() {
   updateStats();
   renderAlbum();
   updateWhatsApp();
-  refreshKeyStatus();
+  syncPremiumStatus();
 }
 
 // ─── STATS / PROGRESS ────────────────────────────────────────
@@ -165,11 +178,6 @@ function addManual() {
 
 // ─── CAMERA ──────────────────────────────────────────────────
 async function startCamera() {
-  if (!apiKey) {
-    setResult('error', '🔑 Configure sua chave da API Gemini primeiro (ícone ⚙️).');
-    openSettings();
-    return;
-  }
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } }
@@ -214,131 +222,35 @@ async function capture() {
   $('captureBtn').disabled = true;
 
   try {
+    const mode = scanMode === 'page' ? 'page' : 'single';
+    const res = await callWorker('/api/scan', { image: b64, mode, deviceId });
     if (scanMode === 'page') {
-      const res = await analyzePageWithGemini(b64);
       handlePageResult(res);
     } else {
-      const res = await analyzeWithGemini(b64);
       handleResult(res);
     }
   } catch (e) {
-    setResult('error', '❌ ' + (e.message || 'Erro ao analisar. Tente de novo.'));
+    if (e.message === 'premium_required') {
+      setResult('error', '🔒 O scanner requer Premium. Ative seu código.');
+      openPremiumModal();
+    } else {
+      setResult('error', '❌ ' + (e.message || 'Erro ao analisar. Tente de novo.'));
+    }
   } finally {
     if (stream) $('captureBtn').disabled = false;
   }
 }
 
-// ─── GEMINI VISION ───────────────────────────────────────────
-async function analyzeWithGemini(base64Image) {
-  const prompt = `Você está vendo a foto de UMA figurinha do álbum Panini da Copa do Mundo 2026.
-
-Cada figurinha tem um código no formato PREFIXO + NÚMERO, por exemplo: PAN3, BRA15, ARG1, MEX20.
-O prefixo são 3 letras maiúsculas identificando a seleção (PAN=Panamá, BRA=Brasil, ARG=Argentina, MEX=México, USA=EUA, FRA=França, ENG=Inglaterra, ESP=Espanha, POR=Portugal, GER=Alemanha, etc).
-
-IMPORTANTE: ignore o número grande decorativo "2026" ou "26" que aparece no FUNDO de toda figurinha — isso NÃO é o código. O código verdadeiro fica em texto menor, geralmente perto do nome do jogador ou no canto.
-
-Se o código não estiver legível mas você reconhecer o jogador e a seleção, deduza o prefixo da seleção e informe o nome do jogador.
-
-Responda SOMENTE com JSON puro, sem markdown, sem crases, neste formato exato:
-{"code":"PAN3","player":"Fidel Escobar","team":"Panamá","confidence":"high"}
-
-- "code": o código no formato PREFIXO+NÚMERO em maiúsculas, ou null se impossível
-- "confidence": "high", "medium" ou "low"
-- Se não for uma figurinha: {"code":null,"player":null,"team":null,"confidence":"none"}`;
-
-  const text = await callGemini(prompt, base64Image, 800);
-  const parsed = extractJSON(text);
-  if (!parsed) {
-    window.__lastRaw = text;
-    const preview = text.slice(0, 60).replace(/\n/g, ' ');
-    throw new Error(`Não entendi a resposta: "${preview}…"`);
-  }
-  return parsed;
-}
-
-// ─── Modo PÁGINA: lê vários códigos de uma vez ───────────────
-async function analyzePageWithGemini(base64Image) {
-  const prompt = `Você está vendo a foto de UMA FOLHA do álbum Panini da Copa do Mundo 2026.
-A folha mostra vários espaços de figurinhas, todos da MESMA seleção.
-
-COMO FUNCIONA ESTE ÁLBUM (muito importante):
-- Cada espaço tem um código no formato PREFIXO + NÚMERO (ex: PAN1, PAN3, PAN6). O prefixo são 3 letras da seleção (PAN=Panamá, BRA=Brasil, ARG=Argentina, MEX=México, etc).
-- Quando o espaço está VAZIO (figurinha faltando), aparece um NÚMERO GRANDE e legível impresso no fundo do espaço — por exemplo "PAN 3" em letras grandes.
-- Quando o espaço está PREENCHIDO (figurinha colada), esse número grande fica COBERTO pela figurinha do jogador — então NÃO se vê o número grande, vê-se a foto do jogador.
-
-IGNORE o "2026"/"26" decorativo gigante que aparece no fundo de TODO espaço — isso nunca é o código.
-
-Sua tarefa: para CADA espaço da folha, identifique o código e responda se o NÚMERO GRANDE do código está visível e legível no fundo.
-
-Responda SOMENTE com JSON puro (sem markdown, sem crases):
-{"team":"Panamá","stickers":[{"code":"PAN1","bigNumberVisible":true},{"code":"PAN3","bigNumberVisible":false},{"code":"PAN6","bigNumberVisible":true}]}
-
-- "bigNumberVisible": true se você consegue LER o número grande do código no fundo (espaço vazio). false se o número grande está coberto por uma figurinha de jogador (espaço preenchido).
-- Liste todos os espaços que conseguir identificar pelo código, mesmo os preenchidos.
-- Se não conseguir ler a folha: {"team":null,"stickers":[]}`;
-
-  const text = await callGemini(prompt, base64Image, 2000);
-  const parsed = extractJSON(text);
-  if (!parsed) {
-    window.__lastRaw = text;
-    const preview = text.slice(0, 60).replace(/\n/g, ' ');
-    throw new Error(`Não entendi a resposta: "${preview}…"`);
-  }
-  return parsed;
-}
-
-// ─── Helper compartilhado de chamada ao Gemini ───────────────
-async function callGemini(prompt, base64Image, maxTokens) {
-  const model = 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-  const resp = await fetch(url, {
+// ─── WORKER ──────────────────────────────────────────────────
+async function callWorker(path, body) {
+  const resp = await fetch(WORKER_URL + path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: 'image/jpeg', data: base64Image } }
-        ]
-      }],
-      generationConfig: {
-        temperature: 0,
-        maxOutputTokens: maxTokens || 800,
-        responseMimeType: 'application/json',
-        thinkingConfig: { thinkingBudget: 0 }
-      }
-    })
+    body: JSON.stringify(body),
   });
-
-  if (!resp.ok) {
-    let detail = '';
-    try { const e = await resp.json(); detail = e.error?.message || ''; } catch {}
-    if (resp.status === 400 && /API key/i.test(detail)) throw new Error('Chave da API inválida. Verifique em ⚙️.');
-    if (resp.status === 429) throw new Error('Limite de uso atingido. Espere um momento.');
-    throw new Error(`Erro ${resp.status}. ${detail}`.trim());
-  }
-
   const data = await resp.json();
-  const cand = data?.candidates?.[0];
-  const finish = cand?.finishReason;
-  const text = cand?.content?.parts?.map(p => p.text || '').join('') || '';
-
-  if (!text) {
-    if (finish === 'MAX_TOKENS') throw new Error('IA cortou a resposta. Tente de novo.');
-    if (finish === 'SAFETY' || data?.promptFeedback?.blockReason) throw new Error('Imagem bloqueada pela IA. Tente outra foto.');
-    throw new Error('IA não retornou texto. Tente de novo.');
-  }
-  return text;
-}
-
-// Extrai o primeiro JSON (objeto ou array) de dentro de qualquer texto
-function extractJSON(s) {
-  s = s.replace(/```json|```/gi, '').trim();
-  try { return JSON.parse(s); } catch {}
-  const m = s.match(/[\{\[][\s\S]*[\}\]]/);
-  if (m) { try { return JSON.parse(m[0]); } catch {} }
-  return null;
+  if (!resp.ok) throw new Error(data.error || `Erro ${resp.status}`);
+  return data;
 }
 
 function handleResult(r) {
@@ -427,30 +339,9 @@ function handlePageResult(res) {
   setResult('success', msg);
 }
 
-// ─── SETTINGS / KEY ──────────────────────────────────────────
-function openSettings() {
-  $('apiKeyInp').value = apiKey;
-  $('settingsModal').classList.add('show');
-}
+// ─── SETTINGS ────────────────────────────────────────────────
+function openSettings() { $('settingsModal').classList.add('show'); }
 function closeSettings() { $('settingsModal').classList.remove('show'); }
-function saveKey() {
-  const k = $('apiKeyInp').value.trim();
-  apiKey = k;
-  localStorage.setItem('fig_gemini_key', k);
-  refreshKeyStatus();
-  showToast(k ? '🔑 Chave salva!' : 'Chave removida');
-  closeSettings();
-}
-function refreshKeyStatus() {
-  const el = $('keyStatus');
-  if (apiKey) {
-    el.className = 'key-status ok';
-    el.textContent = '✅ Chave salva. Scanner pronto pra usar.';
-  } else {
-    el.className = 'key-status no';
-    el.textContent = '🔑 Nenhuma chave salva — o scanner não vai funcionar sem ela.';
-  }
-}
 
 function resetAll() {
   if (!confirm('Apagar TODAS as figurinhas marcadas? Isso não pode ser desfeito.')) return;
@@ -497,11 +388,17 @@ function doInstall() {
 // ─── PREMIUM / CÓDIGO ────────────────────────────────────────
 let isPremium = localStorage.getItem('fig_premium') === '1';
 
-// Códigos válidos hardcoded por enquanto (MVP manual)
-// Futuramente: validar contra backend
-const VALID_CODES = new Set([
-  'SCAN-TESTE', // reservado pra você testar
-]);
+async function syncPremiumStatus() {
+  try {
+    const resp = await fetch(`${WORKER_URL}/api/status?deviceId=${encodeURIComponent(deviceId)}`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    isPremium = !!data.premium;
+    if (isPremium) localStorage.setItem('fig_premium', '1');
+    else localStorage.removeItem('fig_premium');
+    refreshPremiumUI();
+  } catch {}
+}
 
 function refreshPremiumUI() {
   const lockEl = $('pdfLock');
@@ -523,12 +420,16 @@ function openPremiumModal() {
 }
 function closePremiumModal() { $('premiumModal').classList.remove('show'); }
 
-function activateCode() {
+async function activateCode() {
   const raw = $('codeInp').value.trim().toUpperCase();
   const status = $('codeStatus');
   if (!raw) return;
 
-  if (VALID_CODES.has(raw) || raw === localStorage.getItem('fig_code')) {
+  status.className = 'code-status';
+  status.textContent = 'Verificando…';
+
+  try {
+    await callWorker('/api/activate', { code: raw, deviceId });
     isPremium = true;
     localStorage.setItem('fig_premium', '1');
     localStorage.setItem('fig_code', raw);
@@ -537,9 +438,12 @@ function activateCode() {
     refreshPremiumUI();
     setTimeout(() => closePremiumModal(), 1400);
     showToast('🏆 Premium ativado!');
-  } else {
+  } catch (e) {
     status.className = 'code-status err';
-    status.textContent = '❌ Código inválido. Verifique e tente de novo.';
+    const msg = e.message === 'Código já ativado em outro aparelho'
+      ? '❌ Código já usado em outro aparelho.'
+      : '❌ Código inválido. Verifique e tente de novo.';
+    status.textContent = msg;
   }
 }
 

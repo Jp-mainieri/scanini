@@ -354,22 +354,12 @@
 <div class="modal-bg" id="settingsModal">
   <div class="modal">
     <h2>Configurações</h2>
-    <p class="sub">Cole sua chave da API do Google Gemini. Ela fica salva só no seu aparelho e nunca é enviada pra outro lugar além do Google.</p>
-    <label>Chave da API Gemini</label>
-    <input class="inp" id="apiKeyInp" type="password" placeholder="AIza…" style="width:100%" />
-    <div class="key-status no" id="keyStatus">🔑 Nenhuma chave salva — o scanner não vai funcionar sem ela.</div>
-    <p class="sub" style="margin-top:14px;margin-bottom:0;">
-      Não tem chave? Pegue grátis em
-      <a class="link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>
-      (sem cartão).
-    </p>
-    <div class="danger-zone">
+    <div class="danger-zone" style="margin-top:0;padding-top:0;border-top:none;">
       <label>Zona de perigo</label>
       <button class="btn btn-danger" style="width:100%" onclick="resetAll()">🗑 Apagar todas as figurinhas marcadas</button>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeSettings()">Cancelar</button>
-      <button class="btn btn-gold" onclick="saveKey()">Salvar chave</button>
+      <button class="btn btn-outline" style="width:100%" onclick="closeSettings()">Fechar</button>
     </div>
   </div>
 </div>
