@@ -4,7 +4,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 // ─── CONFIG ──────────────────────────────────────────────────
-const WORKER_URL = 'https://scanini-worker.joaopedro-mainieri.workers.dev';
+const WORKER_URL = 'https://scanini-worker.scaniworker.workers.dev';
 const APP_URL = 'scanini.pages.dev';
 
 // ─── DEVICE ID ───────────────────────────────────────────────
