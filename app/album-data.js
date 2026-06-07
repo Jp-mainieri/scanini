@@ -1,36 +1,16 @@
-// ════════════════════════════════════════════════════════════════
 // album-data.js — Panini FIFA World Cup 2026™
-// 994 figurinhas — verificado contra checklist Ludopédio (BR)
-// Estrutura: 00 + FWC1-19 (20) + 48 seleções × 20 (960) + CC1-14 (14) = 994
-// Ordem dos grupos A–L conforme álbum físico brasileiro
-// ════════════════════════════════════════════════════════════════
+// 994 figurinhas: 00 + FWC1-19 (20) + 48 seleções × 20 (960) + CC1-14 (14)
 
 const ALBUM = [
 
-  // ── ESPECIAIS (00 + FWC1–FWC19) ──────────────────────────────
+  // ── ESPECIAIS ────────────────────────────────────────────────
   {
     prefix:"FWC", name:"Especiais Copa 2026", flag:"🏆",
     stickers:[
-      {code:"00",    n:0,  role:"special", player:"Logo Panini"},
-      {code:"FWC1",  n:1,  role:"special", player:"Emblema Oficial"},
-      {code:"FWC2",  n:2,  role:"special", player:"Emblema Oficial"},
-      {code:"FWC3",  n:3,  role:"special", player:"Mascotes Oficiais"},
-      {code:"FWC4",  n:4,  role:"special", player:"Slogan Oficial"},
-      {code:"FWC5",  n:5,  role:"special", player:"Bola Oficial"},
-      {code:"FWC6",  n:6,  role:"special", player:"Canadá — Sede"},
-      {code:"FWC7",  n:7,  role:"special", player:"México — Sede"},
-      {code:"FWC8",  n:8,  role:"special", player:"EUA — Sede"},
-      {code:"FWC9",  n:9,  role:"special", player:"Museu FIFA 1930"},
-      {code:"FWC10", n:10, role:"special", player:"Museu FIFA 1950"},
-      {code:"FWC11", n:11, role:"special", player:"Museu FIFA 1958"},
-      {code:"FWC12", n:12, role:"special", player:"Museu FIFA 1962"},
-      {code:"FWC13", n:13, role:"special", player:"Museu FIFA 1970"},
-      {code:"FWC14", n:14, role:"special", player:"Museu FIFA 1994"},
-      {code:"FWC15", n:15, role:"special", player:"Museu FIFA 1998"},
-      {code:"FWC16", n:16, role:"special", player:"Museu FIFA 2002"},
-      {code:"FWC17", n:17, role:"special", player:"Museu FIFA 2006"},
-      {code:"FWC18", n:18, role:"special", player:"Museu FIFA 2010"},
-      {code:"FWC19", n:19, role:"special", player:"Museu FIFA 2022"},
+      {code:"00"},{code:"FWC1"},{code:"FWC2"},{code:"FWC3"},{code:"FWC4"},
+      {code:"FWC5"},{code:"FWC6"},{code:"FWC7"},{code:"FWC8"},{code:"FWC9"},
+      {code:"FWC10"},{code:"FWC11"},{code:"FWC12"},{code:"FWC13"},{code:"FWC14"},
+      {code:"FWC15"},{code:"FWC16"},{code:"FWC17"},{code:"FWC18"},{code:"FWC19"},
     ]
   },
 
@@ -106,29 +86,19 @@ const ALBUM = [
   {prefix:"GHA", name:"Gana",                 flag:"🇬🇭"},
   {prefix:"PAN", name:"Panamá",               flag:"🇵🇦"},
 
-  // ── COCA-COLA (CC1–CC14) — figurinhas promocionais ───────────
+  // ── COCA-COLA ────────────────────────────────────────────────
   {
     prefix:"CC", name:"Coca-Cola", flag:"🥤",
-    stickers: Array.from({length:14}, (_,i) => ({
-      code:`CC${i+1}`, n:i+1, role:"special", player:`Coca-Cola ${i+1}`
-    }))
+    stickers: Array.from({length:14}, (_,i) => ({code:`CC${i+1}`}))
   },
 
 ].map(t => {
   if (t.stickers) return t;
   return {
     ...t,
-    stickers: Array.from({length:20}, (_,i) => {
-      const n = i + 1;
-      const code = `${t.prefix}${n}`;
-      let role = "player", player = "";
-      if (n === 1)  { role = "logo";  player = `Logo ${t.name}`; }
-      else if (n === 13) { role = "photo"; player = `Foto ${t.name}`; }
-      return {code, n, role, player};
-    })
+    stickers: Array.from({length:20}, (_,i) => ({code:`${t.prefix}${i+1}`}))
   };
 });
 
 const ALL_CODES = ALBUM.flatMap(t => t.stickers.map(s => s.code));
-const TOTAL = ALL_CODES.length;
-const VALID_PREFIXES = ALBUM.map(t => t.prefix);
+const TOTAL = ALL_CODES.length; // 994
