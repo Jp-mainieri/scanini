@@ -645,66 +645,55 @@ function generatePDF() {
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const W = 210, margin = 14, usable = W - margin * 2;
+  const W = 210, margin = 8, usable = W - margin * 2;
   let y = margin;
 
+  // Header compacto
   doc.setFillColor(15, 26, 16);
-  doc.rect(0, 0, W, 28, 'F');
+  doc.rect(0, 0, W, 16, 'F');
   doc.setTextColor(232, 160, 16);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text('FIGURINHAS QUE FALTAM — Copa 2026', margin, 11);
+  doc.setFontSize(11);
+  doc.text('FIGURINHAS QUE FALTAM — COPA 2026', margin, 7);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(180, 190, 160);
+  doc.setFontSize(6.5);
+  doc.setTextColor(160, 170, 145);
   const date = new Date().toLocaleDateString('pt-BR');
-  doc.text(`Gerado em ${date}  ·  ${missing.length} faltando de ${TOTAL}  ·  ${Math.round(owned.size / TOTAL * 100)}% completo`, margin, 19);
-  doc.setTextColor(120, 130, 110);
-  doc.setFontSize(7);
-  doc.text(APP_URL, margin, 25);
-  y = 36;
+  doc.text(`${date}  ·  ${missing.length} faltando de ${TOTAL}  ·  ${Math.round(owned.size / TOTAL * 100)}% completo  ·  ${APP_URL}`, margin, 13);
+  y = 20;
+
+  // 13 colunas de códigos
+  const colW = Math.floor(usable / 13);
+  const cols = 13;
 
   for (const team of ALBUM) {
     const teamMissing = team.stickers.filter(s => !owned.has(s.code)).map(s => s.code);
     if (teamMissing.length === 0) continue;
-    if (y > 270) { doc.addPage(); y = margin; }
+    if (y > 288) break; // página única — para aqui
 
-    doc.setFillColor(20, 35, 22);
-    doc.roundedRect(margin, y, usable, 7, 1.5, 1.5, 'F');
+    // Label do time
+    doc.setFillColor(215, 210, 198);
+    doc.rect(margin, y, usable, 4.5, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(232, 160, 16);
-    doc.text(team.name.toUpperCase(), margin + 3, y + 5);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(140, 150, 130);
-    doc.text(`${teamMissing.length} faltando`, W - margin - 2, y + 5, { align: 'right' });
-    y += 10;
+    doc.setFontSize(6);
+    doc.setTextColor(15, 26, 16);
+    doc.text(`${team.name.toUpperCase()} (${teamMissing.length})`, margin + 1.5, y + 3.2);
+    y += 5.5;
 
-    const colW = 18, cols = Math.floor(usable / colW);
     let col = 0;
     for (const code of teamMissing) {
-      if (y > 278) { doc.addPage(); y = margin; }
-      doc.setFillColor(240, 244, 235);
-      doc.roundedRect(margin + col * colW, y, colW - 1, 5.5, 1, 1, 'F');
+      if (y > 290) break;
+      doc.setFillColor(242, 238, 228);
+      doc.rect(margin + col * colW, y, colW - 0.5, 4, 'F');
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
+      doc.setFontSize(6);
       doc.setTextColor(15, 26, 16);
-      doc.text(code, margin + col * colW + (colW - 1) / 2, y + 3.8, { align: 'center' });
+      doc.text(code, margin + col * colW + (colW - 0.5) / 2, y + 2.9, { align: 'center' });
       col++;
-      if (col >= cols) { col = 0; y += 7; }
+      if (col >= cols) { col = 0; y += 4.5; }
     }
-    if (col > 0) y += 7;
-    y += 4;
-  }
-
-  const pages = doc.getNumberOfPages();
-  for (let i = 1; i <= pages; i++) {
-    doc.setPage(i);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(140, 150, 130);
-    doc.text(`Página ${i} de ${pages}  ·  ${APP_URL}`, W / 2, 293, { align: 'center' });
+    if (col > 0) y += 4.5;
+    y += 1.5;
   }
 
   doc.save(`figurinhas-faltando-${date.replace(/\//g, '-')}.pdf`);
