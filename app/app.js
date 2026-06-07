@@ -662,38 +662,62 @@ function generatePDF() {
   doc.text(`${date}  ·  ${missing.length} faltando de ${TOTAL}  ·  ${Math.round(owned.size / TOTAL * 100)}% completo  ·  ${APP_URL}`, margin, 13);
   y = 20;
 
-  // 13 colunas de códigos
-  const colW = Math.floor(usable / 13);
-  const cols = 13;
+  const nameW = 40; // largura da coluna do time
+  const rowH  = 5.2;
 
+  // Cabeçalho da tabela
+  doc.setFillColor(30, 50, 32);
+  doc.rect(margin, y, usable, rowH, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6);
+  doc.setTextColor(232, 160, 16);
+  doc.text('SELEÇÃO', margin + 1.5, y + 3.6);
+  doc.text('FIGURINHAS FALTANDO', margin + nameW + 2, y + 3.6);
+  y += rowH;
+
+  let row = 0;
   for (const team of ALBUM) {
     const teamMissing = team.stickers.filter(s => !owned.has(s.code)).map(s => s.code);
     if (teamMissing.length === 0) continue;
-    if (y > 288) break; // página única — para aqui
+    if (y > 289) break;
 
-    // Label do time
-    doc.setFillColor(215, 210, 198);
-    doc.rect(margin, y, usable, 4.5, 'F');
+    // Linha alternada
+    doc.setFillColor(row % 2 === 0 ? 242 : 233, row % 2 === 0 ? 238 : 230, row % 2 === 0 ? 228 : 218);
+    doc.rect(margin, y, usable, rowH, 'F');
+
+    // Divisor vertical
+    doc.setDrawColor(200, 194, 180);
+    doc.setLineWidth(0.2);
+    doc.line(margin + nameW, y, margin + nameW, y + rowH);
+
+    // Nome do time
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(6);
     doc.setTextColor(15, 26, 16);
-    doc.text(`${team.name.toUpperCase()} (${teamMissing.length})`, margin + 1.5, y + 3.2);
-    y += 5.5;
+    doc.text(team.name.toUpperCase(), margin + 1.5, y + 3.6);
 
-    let col = 0;
-    for (const code of teamMissing) {
-      if (y > 290) break;
-      doc.setFillColor(242, 238, 228);
-      doc.rect(margin + col * colW, y, colW - 0.5, 4, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(6);
-      doc.setTextColor(15, 26, 16);
-      doc.text(code, margin + col * colW + (colW - 0.5) / 2, y + 2.9, { align: 'center' });
-      col++;
-      if (col >= cols) { col = 0; y += 4.5; }
+    // Contagem
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(5.5);
+    doc.setTextColor(120, 110, 95);
+    doc.text(`(${teamMissing.length})`, margin + nameW - 1, y + 3.6, { align: 'right' });
+
+    // Códigos — tudo na mesma linha
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.setTextColor(15, 26, 16);
+    const codesX   = margin + nameW + 2;
+    const maxWidth  = usable - nameW - 3;
+    let codesText   = teamMissing.join('  ');
+    while (codesText.length > 0 && doc.getTextWidth(codesText) > maxWidth) {
+      const parts = codesText.split('  ');
+      parts.pop();
+      codesText = parts.join('  ') + (parts.length ? '…' : '');
     }
-    if (col > 0) y += 4.5;
-    y += 1.5;
+    doc.text(codesText, codesX, y + 3.6);
+
+    y += rowH;
+    row++;
   }
 
   doc.save(`figurinhas-faltando-${date.replace(/\//g, '-')}.pdf`);
